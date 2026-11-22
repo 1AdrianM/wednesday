@@ -17,7 +17,7 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 ## Phase 1
 - [x] P1-R1 Gemini adapter (streaming SSE, key from env)
 - [x] P1-R2 Context with last N turns + system prompt from file
-- [ ] P1-R3 Spoken-style system prompt
+- [x] P1-R3 Spoken-style system prompt
 - [ ] P1-R4 AiEngine.respond(userText)
 - [ ] P1-R5 Timeouts, one retry, spoken error message
 - [ ] P1-R6 CLI chat loop

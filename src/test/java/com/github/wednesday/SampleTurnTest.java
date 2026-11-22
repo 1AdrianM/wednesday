@@ -1,8 +1,8 @@
 package com.github.wednesday;
 
-import com.github.wednesday.ai.ChatMessage;
+import com.github.wednesday.common.ChatMessage;
 import com.github.wednesday.ai.ModelEvent;
-import com.github.wednesday.ai.ModelRequest;
+import com.github.wednesday.common.ModelRequest;
 import com.github.wednesday.ai.fake.FakeLanguageModel;
 import com.github.wednesday.common.AudioChunk;
 import com.github.wednesday.common.LatencyReport;

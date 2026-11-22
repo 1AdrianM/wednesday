@@ -1,4 +1,4 @@
-package com.github.wednesday.ai;
+package com.github.wednesday.common;
 
 import java.util.Objects;
 

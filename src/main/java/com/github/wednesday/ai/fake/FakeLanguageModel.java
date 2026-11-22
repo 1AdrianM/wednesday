@@ -2,7 +2,7 @@ package com.github.wednesday.ai.fake;
 
 import com.github.wednesday.ai.LanguageModel;
 import com.github.wednesday.ai.ModelEvent;
-import com.github.wednesday.ai.ModelRequest;
+import com.github.wednesday.common.ModelRequest;
 import com.github.wednesday.common.StreamHandle;
 import com.github.wednesday.common.StreamListener;
 import com.github.wednesday.common.VirtualThreadStream;

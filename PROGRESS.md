@@ -1,5 +1,5 @@
 # Progress
-Current phase: 0
+Current phase: 1
 
 ## Phase 0
 - [x] P0-R1 Quarkus skeleton + health endpoint
@@ -12,10 +12,16 @@ Current phase: 0
 - [x] P0-R8 ADR 0001 (architecture + providers)
 - [x] P0-R9 PROGRESS.md and IDEAS.md
 
-Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints the latency report. Awaiting human approval.
+Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints the latency report. Approved implicitly: owner asked to proceed to a functional client (2026-11-22).
 
 ## Phase 1
-- [ ] P1-R1 … P1-R7 (see docs/SPEC.md)
+- [x] P1-R1 Gemini adapter (streaming SSE, key from env)
+- [ ] P1-R2 Context with last N turns + system prompt from file
+- [ ] P1-R3 Spoken-style system prompt
+- [ ] P1-R4 AiEngine.respond(userText)
+- [ ] P1-R5 Timeouts, one retry, spoken error message
+- [ ] P1-R6 CLI chat loop
+- [ ] P1-R7 Tests: trimming, error path, language switch
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)
@@ -28,3 +34,6 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 - Timeline offsets are measured from the earliest mark in each turn (SPEECH_END for voice, REQUEST_SENT for text).
 - Audio fixtures are espeak-ng synthetic speech (robotic, but real phonemes); swap for recorded voice if a real STT struggles with them.
 - ADR 0001 provider picks are Proposed (Deepgram / Gemini Flash / ElevenLabs); owner must confirm before Phase 1.
+- Owner chose Gemini via AI Studio key (free tier). Default model alias `gemini-flash-latest`, thinkingLevel MINIMAL; both overridable by env.
+- ChatMessage/ModelRequest moved to common so context does not depend on ai (avoids ai<->context cycle).
+- Gemini cancel is checked between SSE lines; a blocked read is not interrupted. Revisit for barge-in in Phase 4.

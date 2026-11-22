@@ -1,8 +1,8 @@
 package com.github.wednesday.ai.fake;
 
-import com.github.wednesday.ai.ChatMessage;
+import com.github.wednesday.common.ChatMessage;
 import com.github.wednesday.ai.ModelEvent;
-import com.github.wednesday.ai.ModelRequest;
+import com.github.wednesday.common.ModelRequest;
 import com.github.wednesday.testing.RecordingListener;
 import org.junit.jupiter.api.Test;
 

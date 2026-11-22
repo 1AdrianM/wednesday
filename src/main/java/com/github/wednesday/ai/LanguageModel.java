@@ -1,5 +1,6 @@
 package com.github.wednesday.ai;
 
+import com.github.wednesday.common.ModelRequest;
 import com.github.wednesday.common.StreamHandle;
 import com.github.wednesday.common.StreamListener;
 

@@ -1,0 +1,23 @@
+# Progress
+Current phase: 0
+
+## Phase 0
+- [ ] P0-R1 Quarkus skeleton + health endpoint
+- [ ] P0-R2 Component packages + architecture test
+- [ ] P0-R3 SpeechToText / LanguageModel / TextToSpeech interfaces
+- [ ] P0-R4 Fakes with configurable delay and canned output
+- [ ] P0-R5 Session ID in every log line
+- [ ] P0-R6 Timeline + latency report
+- [ ] P0-R7 WAV fixtures (es/en) + microphone simulator
+- [ ] P0-R8 ADR 0001 (architecture + providers)
+- [x] P0-R9 PROGRESS.md and IDEAS.md
+
+## Phase 1
+- [ ] P1-R1 … P1-R7 (see docs/SPEC.md)
+
+## Phase 6
+- P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)
+
+## Notes
+(one line per surprise or decision)
+- Legacy Spring Boot/Gradle scaffold replaced by Quarkus/Maven; it is preserved in the first git commit.

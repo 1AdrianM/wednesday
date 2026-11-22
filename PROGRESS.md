@@ -20,7 +20,7 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 - [x] P1-R3 Spoken-style system prompt
 - [x] P1-R4 AiEngine.respond(userText)
 - [x] P1-R5 Timeouts, one retry, spoken error message
-- [ ] P1-R6 CLI chat loop
+- [x] P1-R6 CLI chat loop
 - [ ] P1-R7 Tests: trimming, error path, language switch
 
 ## Phase 6
@@ -38,3 +38,4 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 - ChatMessage/ModelRequest moved to common so context does not depend on ai (avoids ai<->context cycle).
 - Gemini cancel is checked between SSE lines; a blocked read is not interrupted. Revisit for barge-in in Phase 4.
 - Retry only when a call fails before any text (retrying after partial text would repeat words aloud). Apology messages are Spanish only for now.
+- CLI is a plain Java main run via exec-maven-plugin (`./chat`), not Quarkus command mode, to keep the web app untouched. Model chosen by name in ai.LanguageModels so cli never imports provider types.

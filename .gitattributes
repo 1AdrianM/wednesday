@@ -2,3 +2,4 @@ mvnw text eol=lf
 *.cmd text eol=crlf
 *.jar binary
 *.wav binary
+chat text eol=lf

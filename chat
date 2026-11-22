@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Text chat with Wednesday. Usage: ./chat [--fake] [--turns N] [--prompt file] [--debug]
+set -euo pipefail
+cd "$(dirname "$0")"
+./mvnw -q compile
+exec ./mvnw -q exec:java -Dexec.args="$*"

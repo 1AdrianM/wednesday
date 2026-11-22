@@ -28,7 +28,7 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 ## Phase 2
 - [x] P2-R1 Real TextToSpeech adapter (streaming)
 - [x] P2-R2 Sentence chunker (sentence end / max length, abbreviations, decimals)
-- [ ] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
+- [x] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
 - [ ] P2-R4 Local playback in the CLI
 - [ ] P2-R5 Timeline first-audio per turn in the report
 - [ ] P2-R6 Test: segment 1 audio starts before the model finishes

@@ -23,7 +23,7 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 - [x] P1-R6 CLI chat loop
 - [x] P1-R7 Tests: trimming (ConversationContextTest), error path (AiEngineFailureTest), language switch (AiEngineLanguageTest)
 
-Acceptance (human): 10-turn conversation with `GEMINI_API_KEY=... ./chat` keeps context; answers short and speakable. Pending real key.
+Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, city, colour, earlier result), switched es->en->es, numbers spoken in words, no lists. First token p50 0,65 s (target 1,2 s) but p95 4,2 s (target 2,5 s): three ~4 s outliers. Awaiting owner approval.
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)
@@ -43,3 +43,5 @@ Acceptance (human): 10-turn conversation with `GEMINI_API_KEY=... ./chat` keeps 
 - CLI is a plain Java main run via exec-maven-plugin (`./chat`), not Quarkus command mode, to keep the web app untouched. Model chosen by name in ai.LanguageModels so cli never imports provider types.
 - Owner asked for a browser frontend during Phase 1: added a text-only WebSocket `/ws/chat` (gateway.ChatSocket -> session.ChatSession). It is an early, text-only slice of P3-R2; audio frames and the real state machine still belong to Phase 3.
 - Browser client: live-subtitle direction chosen by owner (see DESIGN.md, .impeccable/surfaces/chat.md). Run with `WEDNESDAY_LLM=fake ./mvnw quarkus:dev` or with GEMINI_API_KEY set.
+- Default model is gemini-3.5-flash-lite: gemini-flash-latest rejected thinkingLevel MINIMAL and later returned 503 (high demand); gemini-3.6-flash did not answer within 8 s. 3.5-flash-lite gave ~0,4-1,0 s first token.
+- 400 errors (bad parameter) are retried like any other failure; not retrying 4xx except 429 is a cheap later improvement (Phase 7, P7-R4).

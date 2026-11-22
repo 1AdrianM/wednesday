@@ -158,7 +158,7 @@ class GeminiLanguageModelTest {
 
         var config = GeminiLanguageModel.Config.fromEnvironment(
                 Map.of("GEMINI_API_KEY", "k-123", "GEMINI_THINKING_LEVEL", "none"));
-        assertEquals("gemini-flash-latest", config.model());
+        assertEquals("gemini-3.5-flash-lite", config.model());
         assertNull(config.thinkingLevel());
         assertFalse(config.toString().contains("k-123"));
     }

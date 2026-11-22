@@ -40,7 +40,7 @@ public final class GeminiLanguageModel implements LanguageModel {
     public record Config(URI baseUrl, String apiKey, String model, String thinkingLevel) {
 
         public static final URI DEFAULT_BASE_URL = URI.create("https://generativelanguage.googleapis.com/v1beta/");
-        public static final String DEFAULT_MODEL = "gemini-flash-latest";
+        public static final String DEFAULT_MODEL = "gemini-3.5-flash-lite";
         public static final String DEFAULT_THINKING_LEVEL = "MINIMAL";
 
         public Config {

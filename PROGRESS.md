@@ -2,8 +2,8 @@
 Current phase: 0
 
 ## Phase 0
-- [ ] P0-R1 Quarkus skeleton + health endpoint
-- [ ] P0-R2 Component packages + architecture test
+- [x] P0-R1 Quarkus skeleton + health endpoint
+- [x] P0-R2 Component packages + architecture test
 - [ ] P0-R3 SpeechToText / LanguageModel / TextToSpeech interfaces
 - [ ] P0-R4 Fakes with configurable delay and canned output
 - [ ] P0-R5 Session ID in every log line
@@ -21,3 +21,4 @@ Current phase: 0
 ## Notes
 (one line per surprise or decision)
 - Legacy Spring Boot/Gradle scaffold replaced by Quarkus/Maven; it is preserved in the first git commit.
+- Provider adapters must live in `<component>.provider.<name>`; ArchUnit enforces it. Fakes live in `<component>.fake` (not providers).

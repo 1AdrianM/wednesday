@@ -26,7 +26,7 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, city, colour, earlier result), switched es->en->es, numbers spoken in words, no lists. First token p50 0,65 s (target 1,2 s) but p95 4,2 s (target 2,5 s): three ~4 s outliers. Approved by owner 2026-11-22.
 
 ## Phase 2
-- [ ] P2-R1 Real TextToSpeech adapter (streaming)
+- [x] P2-R1 Real TextToSpeech adapter (streaming)
 - [x] P2-R2 Sentence chunker (sentence end / max length, abbreviations, decimals)
 - [ ] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
 - [ ] P2-R4 Local playback in the CLI
@@ -55,3 +55,5 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 - 400 errors (bad parameter) are retried like any other failure; not retrying 4xx except 429 is a cheap later improvement (Phase 7, P7-R4).
 - Prompt: no closing questions or offers unless a fact is missing (owner found them tiring in the 10-turn run).
 - Owner chose Gemini TTS (same AI Studio key) over ElevenLabs. Docs: TTS goes through the Interactions API (/v1beta/interactions, stream:true, PCM s16le 24 kHz mono).
+- Real TTS probe: gemini-3.8-flash-lite-tts first audio ~1,3 s after request, synthesis faster than real time (3,5 s audio in ~0,5 s). Voice first-audio ≈ LLM first sentence + 1,3 s, so ~2 s: above the 1,2 s target; Phase 7 material.
+- Text and voice share the same free Gemini quota; segments are batched (first sentence alone, then larger groups) to limit TTS calls per reply. Watch for 429s.

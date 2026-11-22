@@ -1,6 +1,7 @@
 package com.github.wednesday.tts;
 
 import com.github.wednesday.common.AudioChunk;
+import com.github.wednesday.common.PcmFormat;
 import com.github.wednesday.common.StreamHandle;
 import com.github.wednesday.common.StreamListener;
 
@@ -8,4 +9,7 @@ import com.github.wednesday.common.StreamListener;
 public interface TextToSpeech {
 
     StreamHandle synthesize(String text, StreamListener<AudioChunk> listener);
+
+    /** Format of every chunk this synthesizer produces. */
+    PcmFormat format();
 }

@@ -1,6 +1,7 @@
 package com.github.wednesday.tts.fake;
 
 import com.github.wednesday.common.AudioChunk;
+import com.github.wednesday.common.PcmFormat;
 import com.github.wednesday.common.StreamHandle;
 import com.github.wednesday.common.StreamListener;
 import com.github.wednesday.common.VirtualThreadStream;
@@ -16,6 +17,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * text, with configurable delays, and records the texts it was asked to speak.
  */
 public final class FakeTextToSpeech implements TextToSpeech {
+
+    /** Same layout as the real Gemini voice. */
+    public static final PcmFormat FORMAT = new PcmFormat(24_000, 1);
 
     private final Duration firstChunkDelay;
     private final Duration chunkDelay;
@@ -52,6 +56,11 @@ public final class FakeTextToSpeech implements TextToSpeech {
                 emit.emit(silence);
             }
         });
+    }
+
+    @Override
+    public PcmFormat format() {
+        return FORMAT;
     }
 
     /** Texts received so far, oldest first. */

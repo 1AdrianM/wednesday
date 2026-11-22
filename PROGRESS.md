@@ -12,6 +12,8 @@ Current phase: 0
 - [x] P0-R8 ADR 0001 (architecture + providers)
 - [x] P0-R9 PROGRESS.md and IDEAS.md
 
+Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints the latency report. Awaiting human approval.
+
 ## Phase 1
 - [ ] P1-R1 … P1-R7 (see docs/SPEC.md)
 

@@ -80,6 +80,22 @@ class SpokenReplyTest {
         assertTrue(o.get(Stage.FIRST_AUDIO) <= o.get(Stage.LAST_AUDIO));
     }
 
+    /** P2-R6: the voice starts on the first sentence while the model is still writing the rest. */
+    @Test
+    void firstSegmentAudioStartsBeforeTheModelFinishes() {
+        var slowModel = FakeLanguageModel.builder().reply(REPLY).tokenDelay(Duration.ofMillis(60)).build();
+        var events = run(slowModel, FakeTextToSpeech.builder().firstChunkDelay(Duration.ofMillis(20)).build());
+
+        long firstAudio = timeline.between(1, Stage.REQUEST_SENT, Stage.FIRST_AUDIO).orElseThrow();
+        long lastToken = timeline.between(1, Stage.REQUEST_SENT, Stage.LAST_TOKEN).orElseThrow();
+        assertTrue(firstAudio + 300 < lastToken,
+                "first audio at " + firstAudio + " ms should be well before the last token at " + lastToken + " ms");
+
+        int firstAudioIndex = events.events().indexOf(only(events, SpokenReply.Event.Audio.class).getFirst());
+        int lastTextIndex = events.events().lastIndexOf(only(events, SpokenReply.Event.Text.class).getLast());
+        assertTrue(firstAudioIndex < lastTextIndex, "audio events interleave with text still arriving");
+    }
+
     @Test
     void cancelStopsTextAndVoice() throws Exception {
         var tts = FakeTextToSpeech.builder().chunksPerText(50).chunkDelay(Duration.ofMillis(20)).build();

@@ -31,7 +31,7 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 - [x] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
 - [ ] P2-R4 Local playback in the CLI
 - [ ] P2-R5 Timeline first-audio per turn in the report
-- [ ] P2-R6 Test: segment 1 audio starts before the model finishes
+- [x] P2-R6 Test: segment 1 audio starts before the model finishes
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)

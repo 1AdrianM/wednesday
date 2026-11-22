@@ -35,6 +35,11 @@ class SystemPromptRulesTest {
     }
 
     @Test
+    void doesNotEndEveryAnswerWithAQuestion() {
+        assertTrue(prompt.contains("no termines las respuestas con una pregunta"));
+    }
+
+    @Test
     void containsNoMarkdownItself() {
         assertFalse(prompt.contains("**"));
         assertFalse(prompt.contains("#"));

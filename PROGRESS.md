@@ -1,5 +1,5 @@
 # Progress
-Current phase: 1
+Current phase: 2
 
 ## Phase 0
 - [x] P0-R1 Quarkus skeleton + health endpoint
@@ -23,7 +23,15 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 - [x] P1-R6 CLI chat loop
 - [x] P1-R7 Tests: trimming (ConversationContextTest), error path (AiEngineFailureTest), language switch (AiEngineLanguageTest)
 
-Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, city, colour, earlier result), switched es->en->es, numbers spoken in words, no lists. First token p50 0,65 s (target 1,2 s) but p95 4,2 s (target 2,5 s): three ~4 s outliers. Awaiting owner approval.
+Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, city, colour, earlier result), switched es->en->es, numbers spoken in words, no lists. First token p50 0,65 s (target 1,2 s) but p95 4,2 s (target 2,5 s): three ~4 s outliers. Approved by owner 2026-11-22.
+
+## Phase 2
+- [ ] P2-R1 Real TextToSpeech adapter (streaming)
+- [ ] P2-R2 Sentence chunker (sentence end / max length, abbreviations, decimals)
+- [ ] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
+- [ ] P2-R4 Local playback in the CLI
+- [ ] P2-R5 Timeline first-audio per turn in the report
+- [ ] P2-R6 Test: segment 1 audio starts before the model finishes
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)
@@ -45,3 +53,4 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 - Browser client: live-subtitle direction chosen by owner (see DESIGN.md, .impeccable/surfaces/chat.md). Run with `WEDNESDAY_LLM=fake ./mvnw quarkus:dev` or with GEMINI_API_KEY set.
 - Default model is gemini-3.5-flash-lite: gemini-flash-latest rejected thinkingLevel MINIMAL and later returned 503 (high demand); gemini-3.6-flash did not answer within 8 s. 3.5-flash-lite gave ~0,4-1,0 s first token.
 - 400 errors (bad parameter) are retried like any other failure; not retrying 4xx except 429 is a cheap later improvement (Phase 7, P7-R4).
+- Prompt: no closing questions or offers unless a fact is missing (owner found them tiring in the 10-turn run).

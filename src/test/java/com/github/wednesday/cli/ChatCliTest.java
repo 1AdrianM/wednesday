@@ -70,6 +70,20 @@ class ChatCliTest {
         assertEquals(2, sink.drains, "waits for the audio of each turn before the next prompt");
     }
 
+    /** P2-R5: time from request to first audio is recorded and shown per turn. */
+    @Test
+    void reportAndTurnLineShowFirstAudioTime() throws Exception {
+        var model = FakeLanguageModel.builder().reply("Hola. Adiós.").build();
+        var tts = FakeTextToSpeech.builder().firstChunkDelay(java.time.Duration.ofMillis(50)).build();
+
+        String output = run(model, new ConversationContext("p", 5), "uno\ndos\n/reporte\n", tts, new RecordingSink());
+
+        assertTrue(output.contains("primer audio"), output);
+        String header = output.lines().filter(l -> l.startsWith("turn ")).findFirst().orElseThrow();
+        assertTrue(header.contains("FIRST_AUDIO"), header);
+        assertEquals(2, output.lines().filter(l -> l.matches("^[12] .*")).count(), "one report row per turn");
+    }
+
     @Test
     void voiceFailureIsShownAndTextStillArrives() throws Exception {
         var model = FakeLanguageModel.builder().reply("Hola.").build();

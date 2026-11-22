@@ -30,8 +30,10 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 - [x] P2-R2 Sentence chunker (sentence end / max length, abbreviations, decimals)
 - [x] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
 - [x] P2-R4 Local playback in the CLI
-- [ ] P2-R5 Timeline first-audio per turn in the report
+- [x] P2-R5 Timeline first-audio per turn in the report
 - [x] P2-R6 Test: segment 1 audio starts before the model finishes
+
+Acceptance run (2026-11-22, real Gemini text + voice, CLI): turn 1 first token 0,95 s, first audio 2,06 s, text complete 3,66 s (voice started before the text finished); turn 2 first audio 4,06 s (slow first token 2,65 s). Awaiting owner approval.
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)

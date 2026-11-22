@@ -3,6 +3,7 @@ package com.github.wednesday.cli;
 import com.github.wednesday.ai.AiEngine;
 import com.github.wednesday.ai.LanguageModel;
 import com.github.wednesday.ai.LanguageModels;
+import com.github.wednesday.common.AudioChunk;
 import com.github.wednesday.common.SessionId;
 import com.github.wednesday.common.SessionLogContext;
 import com.github.wednesday.common.Stage;
@@ -10,6 +11,9 @@ import com.github.wednesday.common.StreamListener;
 import com.github.wednesday.common.Timeline;
 import com.github.wednesday.context.ConversationContext;
 import com.github.wednesday.context.SystemPrompt;
+import com.github.wednesday.session.SpokenReply;
+import com.github.wednesday.tts.TextToSpeech;
+import com.github.wednesday.tts.TextToSpeechs;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,8 +32,9 @@ import java.util.logging.Level;
  * {@code /nuevo} (forget the conversation), {@code /salir} (exit).
  *
  * <pre>
- *   ./chat --fake                 offline, no API key
- *   GEMINI_API_KEY=... ./chat     real Gemini model
+ *   ./chat --fake                 offline, no API key (voice is silent)
+ *   ./chat                        real Gemini model and voice (key in .env or GEMINI_API_KEY)
+ *   ./chat --sin-voz              text only
  * </pre>
  */
 public final class ChatCli {
@@ -42,13 +47,19 @@ public final class ChatCli {
     private final Timeline timeline;
     private final BufferedReader in;
     private final PrintStream out;
+    private final TextToSpeech tts;
+    private final AudioSink sink;
 
-    ChatCli(AiEngine engine, ConversationContext context, Timeline timeline, BufferedReader in, PrintStream out) {
+    /** {@code tts} and {@code sink} are both null for text-only mode. */
+    ChatCli(AiEngine engine, ConversationContext context, Timeline timeline, BufferedReader in, PrintStream out,
+            TextToSpeech tts, AudioSink sink) {
         this.engine = engine;
         this.context = context;
         this.timeline = timeline;
         this.in = in;
         this.out = out;
+        this.tts = tts;
+        this.sink = sink;
     }
 
     public static void main(String[] args) throws IOException {
@@ -56,22 +67,39 @@ public final class ChatCli {
         java.util.logging.Logger.getLogger("").setLevel(options.debug ? Level.FINE : Level.OFF);
         PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
         LanguageModel model;
+        TextToSpeech tts = null;
+        AudioSink sink = null;
         try {
-            model = LanguageModels.create(options.provider, settings(Path.of(".env")));
+            var settings = settings(Path.of(".env"));
+            model = LanguageModels.create(options.provider, settings);
+            if (options.voice != null) {
+                tts = TextToSpeechs.create(options.voice, settings);
+            }
         } catch (IllegalArgumentException e) {
             out.println("No puedo arrancar: " + e.getMessage());
-            out.println("Usa --fake para probar sin API key, o exporta GEMINI_API_KEY.");
+            out.println("Usa --fake para probar sin API key, o pon GEMINI_API_KEY en .env.");
             System.exit(2);
             return;
+        }
+        if (tts != null) {
+            sink = SpeakerSink.open(tts.format()).orElse(null);
+            if (sink == null) {
+                out.println("(no encuentro un dispositivo de audio: sigo sólo con texto)");
+                tts = null;
+            }
         }
         String prompt = options.promptFile == null ? SystemPrompt.defaultPrompt() : SystemPrompt.fromFile(options.promptFile);
         ConversationContext context = new ConversationContext(prompt, options.maxTurns);
         var cli = new ChatCli(new AiEngine(model, context), context, Timeline.system(),
-                new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8)), out);
-        out.printf("Wednesday (modelo: %s, memoria: %d turnos). Escribe /salir para terminar.%n",
-                options.provider, options.maxTurns);
+                new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8)), out, tts, sink);
+        out.printf("Wednesday (modelo: %s, voz: %s, memoria: %d turnos). Escribe /salir para terminar.%n",
+                options.provider, tts == null ? "no" : options.voice, options.maxTurns);
         try (var scope = SessionLogContext.open(SessionId.random())) {
             cli.run();
+        } finally {
+            if (sink != null) {
+                sink.close();
+            }
         }
         System.exit(0);
     }
@@ -131,26 +159,54 @@ public final class ChatCli {
         timeline.mark(Stage.REQUEST_SENT);
         CountDownLatch done = new CountDownLatch(1);
         out.print(ASSISTANT);
-        engine.respond(userText, new StreamListener<>() {
-            @Override
-            public void onEvent(String token) {
-                timeline.mark(Stage.FIRST_TOKEN);
-                out.print(token);
-                out.flush();
-            }
+        if (tts == null) {
+            engine.respond(userText, new StreamListener<>() {
+                @Override
+                public void onEvent(String token) {
+                    timeline.mark(Stage.FIRST_TOKEN);
+                    printToken(token);
+                }
 
-            @Override
-            public void onError(Throwable error) {
-                out.print("[error: " + error.getMessage() + "]");
-                done.countDown();
-            }
+                @Override
+                public void onError(Throwable error) {
+                    out.print("[error: " + error.getMessage() + "]");
+                    done.countDown();
+                }
 
-            @Override
-            public void onComplete() {
-                timeline.mark(Stage.LAST_TOKEN);
-                done.countDown();
-            }
-        });
+                @Override
+                public void onComplete() {
+                    timeline.mark(Stage.LAST_TOKEN);
+                    done.countDown();
+                }
+            });
+        } else {
+            StringBuilder voiceNote = new StringBuilder();
+            SpokenReply.start(engine, tts, userText, timeline, SpokenReply.Settings.DEFAULT, new StreamListener<>() {
+                @Override
+                public void onEvent(SpokenReply.Event event) {
+                    switch (event) {
+                        case SpokenReply.Event.Text(String token) -> printToken(token);
+                        case SpokenReply.Event.Audio(AudioChunk chunk) -> sink.play(chunk);
+                        case SpokenReply.Event.SpeechFailed(String reason) -> voiceNote.append(reason);
+                        case SpokenReply.Event.Segment segment -> { }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    out.print("[error: " + error.getMessage() + "]");
+                    done.countDown();
+                }
+
+                @Override
+                public void onComplete() {
+                    if (!voiceNote.isEmpty()) {
+                        out.print(System.lineSeparator() + "   (voz no disponible: " + voiceNote + ")");
+                    }
+                    done.countDown();
+                }
+            });
+        }
         try {
             done.await();
         } catch (InterruptedException e) {
@@ -158,13 +214,32 @@ public final class ChatCli {
             return;
         }
         out.println();
+        printLatency(turn);
+        if (sink != null) {
+            sink.drain();
+        }
+    }
+
+    private void printToken(String token) {
+        out.print(token);
+        out.flush();
+    }
+
+    private void printLatency(int turn) {
         long first = timeline.between(turn, Stage.REQUEST_SENT, Stage.FIRST_TOKEN).orElse(-1L);
         long total = timeline.between(turn, Stage.REQUEST_SENT, Stage.LAST_TOKEN).orElse(-1L);
-        out.printf("   (primer token %d ms, total %d ms)%n", first, total);
+        var audio = timeline.between(turn, Stage.REQUEST_SENT, Stage.FIRST_AUDIO);
+        if (audio.isPresent()) {
+            out.printf("   (primer token %d ms, primer audio %d ms, texto completo %d ms)%n", first, audio.get(), total);
+        } else {
+            out.printf("   (primer token %d ms, total %d ms)%n", first, total);
+        }
     }
 
     static final class Options {
         String provider = "gemini";
+        /** TTS provider, or null for text only. */
+        String voice = "gemini";
         int maxTurns = 20;
         Path promptFile;
         boolean debug;
@@ -173,7 +248,12 @@ public final class ChatCli {
             Options o = new Options();
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
-                    case "--fake" -> o.provider = "fake";
+                    case "--fake" -> {
+                        o.provider = "fake";
+                        o.voice = o.voice == null ? null : "fake";
+                    }
+                    case "--sin-voz" -> o.voice = null;
+                    case "--voz" -> o.voice = args[++i];
                     case "--model" -> o.provider = args[++i];
                     case "--turns" -> o.maxTurns = Integer.parseInt(args[++i]);
                     case "--prompt" -> o.promptFile = Path.of(args[++i]);

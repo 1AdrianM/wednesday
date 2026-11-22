@@ -2,6 +2,9 @@ package com.github.wednesday.cli;
 
 import com.github.wednesday.ai.AiEngine;
 import com.github.wednesday.ai.fake.FakeLanguageModel;
+import com.github.wednesday.common.AudioChunk;
+import com.github.wednesday.tts.TextToSpeech;
+import com.github.wednesday.tts.fake.FakeTextToSpeech;
 import com.github.wednesday.common.Timeline;
 import com.github.wednesday.context.ConversationContext;
 import org.junit.jupiter.api.Test;
@@ -11,6 +14,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -20,11 +25,60 @@ class ChatCliTest {
 
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
+    /** Records what would have been played. */
+    static final class RecordingSink implements AudioSink {
+        final List<AudioChunk> played = new CopyOnWriteArrayList<>();
+        int drains;
+
+        @Override
+        public void play(AudioChunk chunk) {
+            played.add(chunk);
+        }
+
+        @Override
+        public void drain() {
+            drains++;
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
     private String run(FakeLanguageModel model, ConversationContext context, String input) throws Exception {
+        return run(model, context, input, null, null);
+    }
+
+    private String run(FakeLanguageModel model, ConversationContext context, String input,
+                       TextToSpeech tts, AudioSink sink) throws Exception {
         var out = new PrintStream(buffer, true, StandardCharsets.UTF_8);
         new ChatCli(new AiEngine(model, context), context, Timeline.system(),
-                new BufferedReader(new StringReader(input)), out).run();
+                new BufferedReader(new StringReader(input)), out, tts, sink).run();
         return buffer.toString(StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void speaksRepliesThroughTheAudioSinkAndWaitsForPlayback() throws Exception {
+        var model = FakeLanguageModel.builder().reply("Hola, Adri. Son las diez.").build();
+        var tts = FakeTextToSpeech.builder().chunksPerText(3).build();
+        var sink = new RecordingSink();
+
+        String output = run(model, new ConversationContext("p", 5), "hola\nqué hora es\n", tts, sink);
+
+        assertTrue(output.contains("wednesday> Hola, Adri. Son las diez."), output);
+        assertEquals(3 * tts.texts().size(), sink.played.size());
+        assertEquals(2, sink.drains, "waits for the audio of each turn before the next prompt");
+    }
+
+    @Test
+    void voiceFailureIsShownAndTextStillArrives() throws Exception {
+        var model = FakeLanguageModel.builder().reply("Hola.").build();
+        var tts = FakeTextToSpeech.builder().failWith(new IllegalStateException("cuota agotada")).build();
+
+        String output = run(model, new ConversationContext("p", 5), "hola\n", tts, new RecordingSink());
+
+        assertTrue(output.contains("wednesday> Hola."), output);
+        assertTrue(output.contains("(voz no disponible: cuota agotada)"), output);
     }
 
     @Test
@@ -84,6 +138,9 @@ class ChatCliTest {
     void parsesOptions() {
         var o = ChatCli.Options.parse(new String[] {"--fake", "--turns", "7", "--debug"});
         assertEquals("fake", o.provider);
+        assertEquals("fake", o.voice, "--fake also fakes the voice");
+        assertEquals("gemini", ChatCli.Options.parse(new String[] {}).voice);
+        assertNull(ChatCli.Options.parse(new String[] {"--sin-voz"}).voice);
         assertEquals(7, o.maxTurns);
         assertTrue(o.debug);
         assertThrows(IllegalArgumentException.class, () -> ChatCli.Options.parse(new String[] {"--nope"}));

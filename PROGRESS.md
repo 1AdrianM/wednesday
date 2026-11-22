@@ -27,7 +27,7 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 
 ## Phase 2
 - [ ] P2-R1 Real TextToSpeech adapter (streaming)
-- [ ] P2-R2 Sentence chunker (sentence end / max length, abbreviations, decimals)
+- [x] P2-R2 Sentence chunker (sentence end / max length, abbreviations, decimals)
 - [ ] P2-R3 Pipeline tokens -> chunker -> TTS, concurrent
 - [ ] P2-R4 Local playback in the CLI
 - [ ] P2-R5 Timeline first-audio per turn in the report
@@ -54,3 +54,4 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 - Default model is gemini-3.5-flash-lite: gemini-flash-latest rejected thinkingLevel MINIMAL and later returned 503 (high demand); gemini-3.6-flash did not answer within 8 s. 3.5-flash-lite gave ~0,4-1,0 s first token.
 - 400 errors (bad parameter) are retried like any other failure; not retrying 4xx except 429 is a cheap later improvement (Phase 7, P7-R4).
 - Prompt: no closing questions or offers unless a fact is missing (owner found them tiring in the 10-turn run).
+- Owner chose Gemini TTS (same AI Studio key) over ElevenLabs. Docs: TTS goes through the Interactions API (/v1beta/interactions, stream:true, PCM s16le 24 kHz mono).

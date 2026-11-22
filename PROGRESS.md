@@ -41,3 +41,4 @@ Acceptance (human): 10-turn conversation with `GEMINI_API_KEY=... ./chat` keeps 
 - Gemini cancel is checked between SSE lines; a blocked read is not interrupted. Revisit for barge-in in Phase 4.
 - Retry only when a call fails before any text (retrying after partial text would repeat words aloud). Apology messages are Spanish only for now.
 - CLI is a plain Java main run via exec-maven-plugin (`./chat`), not Quarkus command mode, to keep the web app untouched. Model chosen by name in ai.LanguageModels so cli never imports provider types.
+- Owner asked for a browser frontend during Phase 1: added a text-only WebSocket `/ws/chat` (gateway.ChatSocket -> session.ChatSession). It is an early, text-only slice of P3-R2; audio frames and the real state machine still belong to Phase 3.

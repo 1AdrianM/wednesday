@@ -67,6 +67,20 @@ class ChatCliTest {
     }
 
     @Test
+    void readsDotEnvButRealEnvironmentWins(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        var env = dir.resolve(".env");
+        java.nio.file.Files.writeString(env, "# comentario\nGEMINI_MODEL=\"gemini-test\"\nWEDNESDAY_X='y'\nPATH=nope\nmalformed\n");
+
+        var settings = ChatCli.settings(env);
+
+        assertEquals("gemini-test", settings.get("GEMINI_MODEL"));
+        assertEquals("y", settings.get("WEDNESDAY_X"));
+        assertEquals(System.getenv("PATH"), settings.get("PATH"));
+        assertFalse(settings.containsKey("malformed"));
+        assertTrue(ChatCli.settings(dir.resolve("missing")).size() >= System.getenv().size());
+    }
+
+    @Test
     void parsesOptions() {
         var o = ChatCli.Options.parse(new String[] {"--fake", "--turns", "7", "--debug"});
         assertEquals("fake", o.provider);

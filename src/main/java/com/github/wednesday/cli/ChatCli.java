@@ -16,7 +16,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 
@@ -54,7 +57,7 @@ public final class ChatCli {
         PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
         LanguageModel model;
         try {
-            model = LanguageModels.create(options.provider);
+            model = LanguageModels.create(options.provider, settings(Path.of(".env")));
         } catch (IllegalArgumentException e) {
             out.println("No puedo arrancar: " + e.getMessage());
             out.println("Usa --fake para probar sin API key, o exporta GEMINI_API_KEY.");
@@ -71,6 +74,28 @@ public final class ChatCli {
             cli.run();
         }
         System.exit(0);
+    }
+
+    /** Process environment over the KEY=VALUE lines of a local .env file (if present). */
+    static Map<String, String> settings(Path dotEnv) throws IOException {
+        Map<String, String> settings = new HashMap<>();
+        if (Files.isRegularFile(dotEnv)) {
+            for (String line : Files.readAllLines(dotEnv, StandardCharsets.UTF_8)) {
+                String l = line.strip();
+                int eq = l.indexOf('=');
+                if (l.isEmpty() || l.startsWith("#") || eq < 1) {
+                    continue;
+                }
+                String value = l.substring(eq + 1).strip();
+                if (value.length() >= 2 && (value.startsWith("\"") && value.endsWith("\"")
+                        || value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.substring(1, value.length() - 1);
+                }
+                settings.put(l.substring(0, eq).strip(), value);
+            }
+        }
+        settings.putAll(System.getenv());
+        return settings;
     }
 
     /** Reads lines until EOF or /salir. */

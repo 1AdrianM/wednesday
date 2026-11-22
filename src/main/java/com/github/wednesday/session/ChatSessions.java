@@ -9,9 +9,14 @@ import com.github.wednesday.common.Timeline;
 import com.github.wednesday.context.ConversationContext;
 import com.github.wednesday.context.SystemPrompt;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /** Creates chat sessions wired to the configured language model. */
@@ -56,12 +61,22 @@ public class ChatSessions {
         }
     }
 
+    /** Provider settings from Quarkus config: environment variables, a local .env file, or properties. */
+    private static Map<String, String> providerSettings() {
+        Config config = ConfigProvider.getConfig();
+        Map<String, String> settings = new HashMap<>();
+        for (String name : List.of("GEMINI_API_KEY", "GEMINI_MODEL", "GEMINI_THINKING_LEVEL")) {
+            config.getOptionalValue(name, String.class).ifPresent(v -> settings.put(name, v));
+        }
+        return settings;
+    }
+
     private LanguageModel model() {
         LanguageModel m = model;
         if (m == null) {
             synchronized (this) {
                 if (model == null) {
-                    model = LanguageModels.create(provider);
+                    model = LanguageModels.create(provider, providerSettings());
                 }
                 m = model;
             }

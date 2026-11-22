@@ -6,7 +6,7 @@ Current phase: 0
 - [x] P0-R2 Component packages + architecture test
 - [x] P0-R3 SpeechToText / LanguageModel / TextToSpeech interfaces
 - [x] P0-R4 Fakes with configurable delay and canned output
-- [ ] P0-R5 Session ID in every log line
+- [x] P0-R5 Session ID in every log line
 - [ ] P0-R6 Timeline + latency report
 - [ ] P0-R7 WAV fixtures (es/en) + microphone simulator
 - [ ] P0-R8 ADR 0001 (architecture + providers)

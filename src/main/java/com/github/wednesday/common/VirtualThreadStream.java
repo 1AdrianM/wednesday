@@ -1,6 +1,7 @@
 package com.github.wednesday.common;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -42,7 +43,11 @@ public final class VirtualThreadStream<E> implements StreamHandle {
     public static <E> VirtualThreadStream<E> start(String name, StreamListener<E> listener, Body<E> body) {
         Objects.requireNonNull(body, "body");
         VirtualThreadStream<E> stream = new VirtualThreadStream<>(listener);
-        stream.thread = Thread.ofVirtual().name(name).unstarted(() -> stream.runBody(body));
+        Map<String, Object> logContext = SessionLogContext.capture();
+        stream.thread = Thread.ofVirtual().name(name).unstarted(() -> {
+            SessionLogContext.restore(logContext);
+            stream.runBody(body);
+        });
         stream.thread.start();
         return stream;
     }

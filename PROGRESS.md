@@ -21,7 +21,9 @@ Acceptance: `./mvnw verify` green; `./mvnw test -Dtest=SampleTurnTest` prints th
 - [x] P1-R4 AiEngine.respond(userText)
 - [x] P1-R5 Timeouts, one retry, spoken error message
 - [x] P1-R6 CLI chat loop
-- [ ] P1-R7 Tests: trimming, error path, language switch
+- [x] P1-R7 Tests: trimming (ConversationContextTest), error path (AiEngineFailureTest), language switch (AiEngineLanguageTest)
+
+Acceptance (human): 10-turn conversation with `GEMINI_API_KEY=... ./chat` keeps context; answers short and speakable. Pending real key.
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)

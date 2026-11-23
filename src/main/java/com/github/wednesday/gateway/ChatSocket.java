@@ -84,8 +84,12 @@ public class ChatSocket {
         if (!connection.isOpen()) {
             return;
         }
+        String json = toJson(event);
+        if (json == null) {
+            return;
+        }
         try {
-            connection.sendTextAndAwait(toJson(event));
+            connection.sendTextAndAwait(json);
         } catch (RuntimeException e) {
             LOG.debugf("dropping event for closed connection: %s", e.getMessage());
         }
@@ -109,6 +113,10 @@ public class ChatSocket {
                 if (r.p95FirstTokenMillis() != null) {
                     n.put("p95FirstTokenMs", r.p95FirstTokenMillis());
                 }
+            }
+            case SessionEvent.Transcript t -> n.put("type", "transcript").put("text", t.text()).put("final", t.isFinal());
+            case SessionEvent.Audio a -> {
+                return null; // text-only transport
             }
             case SessionEvent.Reset r -> n.put("type", "reset");
             case SessionEvent.Error e -> n.put("type", "error").put("message", e.message());

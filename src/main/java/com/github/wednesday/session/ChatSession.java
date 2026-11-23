@@ -85,8 +85,8 @@ public final class ChatSession implements AutoCloseable {
                 @Override
                 public void onComplete() {
                     timeline.mark(Stage.LAST_TOKEN);
-                    var done = new SessionEvent.TurnDone(turn,
-                            timeline.between(turn, Stage.REQUEST_SENT, Stage.FIRST_TOKEN).orElse(-1L),
+                    var done = new SessionEvent.TurnDone(turn, false,
+                            timeline.between(turn, Stage.REQUEST_SENT, Stage.FIRST_TOKEN).orElse(-1L), -1L,
                             timeline.between(turn, Stage.REQUEST_SENT, Stage.LAST_TOKEN).orElse(-1L));
                     synchronized (ChatSession.this) {
                         finished.add(done);
@@ -115,7 +115,7 @@ public final class ChatSession implements AutoCloseable {
         LatencyReport report = timeline.report();
         out.accept(new SessionEvent.Report(List.copyOf(finished),
                 report.percentile(Stage.FIRST_TOKEN, 50).orElse(null),
-                report.percentile(Stage.FIRST_TOKEN, 95).orElse(null)));
+                report.percentile(Stage.FIRST_TOKEN, 95).orElse(null), null, null));
     }
 
     @Override

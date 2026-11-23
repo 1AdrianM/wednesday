@@ -38,7 +38,7 @@ Acceptance run (2026-11-22, real Gemini text + voice, CLI): turn 1 first token 0
 ## Phase 3
 STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by owner 2026-11-22.
 - [x] P3-R1 Audio format decided (ADR 0002: 16 kHz 16-bit mono, 20 ms = 640-byte frames) and enforced at the Gateway (`InputFrames`)
-- [ ] P3-R2 Gateway WebSocket: audio + control in, audio + events out
+- [x] P3-R2 Gateway WebSocket `/ws/voice`: binary frames + JSON controls in, binary PCM + JSON events out. `VoiceSession` is an actor (one thread + queue); found a latent lock-order deadlock in `ChatSession` (reset vs onComplete), to retire with it in R5
 - [x] P3-R3 Real SpeechToText adapter (partial + final). Real API sends binary JSON frames and ends a manual turn with `generationComplete`, never `turnComplete` (docs imply the latter); Final ~0,4 s after end of audio
 - [x] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test (done before R2/R3: the voice socket builds on it). Phase 3 is push-to-talk; SPEAKING->LISTENING (barge-in) waits for Phase 4
 - [ ] P3-R5 Minimal browser voice client

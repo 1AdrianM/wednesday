@@ -3,7 +3,8 @@
 Notas de las sesiones de recorrido guiado: qué hace cada pieza, qué patrones usa y qué decisiones de diseño de sistemas hay detrás. Se escribe a medida que avanzamos; al final de cada sesión queda la pregunta pendiente para retomar.
 
 - Recurso interactivo de la lección 2 (simulador de la carrera entre hilos): https://claude.ai/artifact/NW8saFpaQ7uUx86dhQq36K
-- Estado del proyecto al escribir esto: Fases 0, 1 y 2 terminadas (103 tests). Siguiente: Fase 3.
+- Estado del proyecto: Fases 0, 1 y 2 terminadas; Fase 3 construida (voz de entrada, Gateway de voz, máquina de estados) y pendiente de tu prueba de aceptación.
+- Cada fase añade aquí sus lecciones al terminar (ver "Lecciones de la Fase 3").
 
 ---
 
@@ -14,28 +15,32 @@ Notas de las sesiones de recorrido guiado: qué hace cada pieza, qué patrones u
    ┌──────────────────────┐        ┌──────────────────────────┐
    │ cli/ChatCli (+voz)   │        │ index.html (navegador)   │
    └──────────┬───────────┘        └────────────┬─────────────┘
-              │                                 │ WebSocket /ws/chat
+              │                                 │ WebSocket /ws/voice
+              │                                 │ (binario: audio · texto: JSON)
               │                     ┌───────────▼─────────────┐
-              │                     │ gateway/ChatSocket      │  sólo traduce JSON
+              │                     │ gateway/VoiceSocket     │  traduce y valida tramas
+              │                     │ gateway/InputFrames     │  (ArchUnit: sin lógica)
               │                     └───────────┬─────────────┘
               ▼                                 ▼
    ┌─────────────────────────────────────────────────────────┐
-   │ session/   ChatSession · SpokenReply · ChatSessions     │  orquesta
-   └───────┬──────────────────┬──────────────────┬───────────┘
-           ▼                  ▼                  ▼
-   ┌──────────────┐   ┌──────────────┐   ┌────────────────────┐
-   │ ai/AiEngine  │──▶│ context/     │   │ tts/SentenceChunker│
-   │ (reintentos, │   │ Conversation │   │ tts/TextToSpeech   │
-   │  timeouts)   │   │ Context      │   └─────────┬──────────┘
-   └──────┬───────┘   └──────────────┘             │
-          ▼ interfaz LanguageModel                 ▼ interfaz TextToSpeech
-   ┌──────────────────────┐              ┌──────────────────────┐
-   │ ai.provider.gemini   │  ← sólo aquí │ tts.provider.gemini  │
-   │ ai.fake              │    se habla  │ tts.fake             │
-   └──────────────────────┘    con Google└──────────────────────┘
+   │ session/  VoiceSession (actor) · SessionStateMachine    │  orquesta
+   │           SpokenReply · VoiceSessions                   │
+   └──┬──────────────┬──────────────────┬──────────────┬─────┘
+      ▼              ▼                  ▼              ▼
+   ┌────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────────────┐
+   │ stt/       │ │ ai/AiEngine  │▶│ context/     │ │ tts/SentenceChunker│
+   │ SpeechTo-  │ │ (reintentos, │ │ Conversation │ │ tts/TextToSpeech   │
+   │ Text       │ │  timeouts)   │ │ Context      │ └─────────┬──────────┘
+   └─────┬──────┘ └──────┬───────┘ └──────────────┘           │
+         ▼               ▼ interfaz LanguageModel             ▼ interfaz TextToSpeech
+   ┌──────────────┐ ┌──────────────────────┐        ┌──────────────────────┐
+   │ stt.provider │ │ ai.provider.gemini   │← sólo  │ tts.provider.gemini  │
+   │ .gemini      │ │ ai.fake              │  aquí  │ tts.fake             │
+   │ stt.fake     │ └──────────────────────┘ se habla con Google ──────────┘
+   └──────────────┘
 
    common/  ← lo compartido: StreamListener/StreamHandle, VirtualThreadStream,
-              AudioChunk, PcmFormat, SessionId, Timeline   (no depende de nadie)
+              AudioChunk, PcmFormat, AudioFormats, SessionId, Timeline   (no depende de nadie)
 ```
 
 ---
@@ -219,6 +224,63 @@ Conversación de voz completa en el navegador: formato de audio (16 kHz, 16 bits
 2. **Contexto y prompt:** ventana de N turnos, prompt en archivo, tests que vigilan las reglas.
 3. **Medición:** `Timeline`, etapas, percentiles y cómo se lee el reporte.
 4. **`SpokenReply`:** el pipeline de dos hilos, el divisor en frases y el agrupado para ahorrar cuota.
-5. **Gateway y sesión:** por qué el gateway no tiene lógica y cómo vive una sesión por conexión.
+5. **Gateway y sesión:** ahora cubierto por las lecciones de la Fase 3 (abajo).
 6. **Configuración y secretos:** `.env`, MicroProfile Config y por qué la key va en un header.
 7. **La estrategia de tests:** fakes, servidores HTTP locales que imitan a Gemini, ArchUnit y tests de carreras.
+
+---
+
+## Lecciones de la Fase 3 (voz de entrada, Gateway y estados)
+
+Mismo formato guiado: una pieza cada vez y una pregunta para predecir antes de ver la respuesta. Las respuestas están aquí, pero mejor intentarlo primero.
+
+### F3-1. Formato de audio fijo en la frontera (ADR 0002)
+- **Qué:** el micrófono entra como PCM a 16 kHz, 16 bits y mono, en tramas de 20 ms. `gateway.InputFrames` rechaza cualquier mensaje binario que no mida exactamente 640 bytes.
+- **Pregunta:** ¿de dónde sale el número 640? ¿Por qué rechazar en vez de "arreglar" lo que llega?
+- **Respuesta:** 16 000 muestras/s × 2 bytes × 0,020 s = 640. Validar en la frontera da a todo lo de dentro una sola forma de audio, y los tests no tienen que negociar formatos. Arreglar en el servidor (remuestrear) cuesta CPU y casos raros. Por eso el navegador hace ese trabajo con un AudioWorklet.
+
+### F3-2. La máquina de estados como tabla
+- **Qué:** `SessionStateMachine` tiene un mapa `estado → estados permitidos`. Un movimiento ilegal se rechaza, se registra en el log y no cambia nada. El test recorre los 16 pares posibles.
+- **Pregunta:** ¿por qué SPEAKING → LISTENING está prohibido ahora, si es justo lo que quieres hacer al interrumpir?
+- **Respuesta:** interrumpir es la Fase 4 (barge-in). Prohibirlo hoy obliga a que entre como un cambio revisado de la tabla, con su test, y no "porque sí". La tabla es la especificación ejecutable.
+
+### F3-3. El adaptador de STT: la documentación contra la realidad
+- **Qué:** `GeminiSpeechToText` usa el WebSocket del JDK (sin librerías) y funciona como pulsar para hablar: `setup` (VAD automático apagado), `activityStart`, audio en lotes de 100 ms y `activityEnd`.
+- **Historia:** la documentación sugería que el turno acaba con `turnComplete`. Al probarlo contra la API real, ese mensaje nunca llegó. Llegaron `generationComplete`, todo en tramas **binarias**, y el `Final` esperaba al timeout de 3 s. Con el cambio, llega unos 0,4 s después de soltar.
+- **Pregunta:** si los tests con el servidor falso pasaban, ¿cómo se nos habría escapado esto?
+- **Respuesta:** el servidor falso imitaba la documentación, no la realidad. Un fake solo es tan bueno como lo que imita. Por eso se hace una prueba real pequeña y luego se copia lo observado al fake (ahora el test lleva la secuencia real con fecha).
+
+### F3-4. `VoiceSession` es un actor (ADR 0003)
+- **Qué:** un solo hilo por sesión y una cola. Comandos del cliente, transcripciones y eventos de la respuesta entran como mensajes. Los callbacks de los streams **solo encolan**.
+- **Pregunta (enlaza con la lección 2):** en la antigua `ChatSession`, `reset()` tenía el lock de la sesión y llamaba a `cancel()`, que pide el candado de entrega del stream. A la vez, `onComplete` se ejecutaba *dentro* del candado de entrega y pedía el lock de la sesión. ¿Qué pasa?
+- **Respuesta:** interbloqueo (deadlock). Cada hilo tiene el candado que el otro espera. El actor lo elimina por diseño, porque no hay locks de sesión que ordenar.
+
+### F3-5. Etiquetas por stream, no contadores
+- **Historia:** el STT falso emite `Final` y justo después `onComplete`. Con un contador de "generación", ese `onComplete` tardío se tomó por el fin de la *respuesta*, y la sesión saltó de THINKING a IDLE sin hablar. El test `voiceTurnGoesThroughEveryState` lo detectó.
+- **Pregunta:** ¿por qué etiquetar cada mensaje con el objeto-stream que lo produjo lo arregla?
+- **Respuesta:** la pregunta correcta no es "¿es de este turno?", sino "¿viene del stream que ahora me importa?". Un stream cancelado o terminado deja de ser el actual y sus mensajes se descartan.
+
+### F3-6. Fugas de hilos y el detalle de los hilos virtuales
+- **Qué:** `VoiceSocketCleanupTest` conecta y desconecta 12 veces (en reposo, escuchando y a mitad de respuesta) y exige que no quede ni sesión ni hilo.
+- **Pregunta:** ¿por qué no basta `Thread.getAllStackTraces()`?
+- **Respuesta:** no incluye los hilos virtuales. El volcado JSON de hilos de la JVM sí, y por eso `LiveThreads` lo usa. Además se hizo una "prueba de mutación": quitar `session.close()` hace fallar el test. Un test que nunca puede fallar no prueba nada.
+
+### F3-7. El navegador: capturar y reproducir audio
+- **Qué:**
+  - Un AudioWorklet remuestrea de 48 kHz a 16 kHz con interpolación lineal y corta tramas de 320 muestras.
+  - La voz de 24 kHz se programa en bloques seguidos (`nextAt`).
+  - El piloto sigue en "Hablando" hasta que el navegador termina de sonar.
+- **Pregunta:** el servidor dice IDLE en cuanto envía el último audio. ¿Por qué el navegador no le hace caso enseguida?
+- **Respuesta:** la voz se genera más rápido que el tiempo real, así que el servidor termina de enviar antes de que acabe de sonar. El estado que ve el usuario es el de lo que *oye*. En la Fase 4 esto importará para interrumpir.
+
+### Lección de proceso (un error mío)
+El commit de P3-R6 no compilaba. Filtré la salida de Maven con `grep` y la línea del error no coincidía con el filtro. Desde entonces miro siempre el **código de salida** del comando, no solo su texto, y lo corregí en un commit aparte. Lo aplicable a cualquier pipeline de CI: un filtro de logs nunca sustituye al código de salida.
+
+### Números de la Fase 3 (Gemini real)
+| Medida | Valor |
+|---|---|
+| Transcripción final tras soltar | ~0,4–0,5 s |
+| Primer audio tras soltar (cliente Java) | 2,66 s |
+| Primer audio tras soltar (Chrome con micro falso) | 2,01 s |
+| Objetivo p50 | 1,2 s → trabajo de la Fase 7 |
+

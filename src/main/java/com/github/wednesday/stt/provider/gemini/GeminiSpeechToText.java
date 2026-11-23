@@ -39,8 +39,10 @@ import java.util.concurrent.TimeUnit;
  * {@code activityStart} and closes it with {@code activityEnd} on {@link SttStream#endOfAudio()}.
  *
  * <p>Interim hypotheses become {@link TranscriptEvent.Partial}s; settled segments
- * ({@code inputTranscription}, VERBATIM mode) are appended, and on {@code turnComplete} the
- * joined text is emitted once as {@link TranscriptEvent.Final}. Audio is batched to 100 ms per
+ * ({@code inputTranscription}, VERBATIM mode) are appended, and when the turn is over the joined
+ * text is emitted once as {@link TranscriptEvent.Final}. The real API marks the end with
+ * {@code generationComplete} (observed 2026-11-22; it sends no {@code turnComplete} in this mode);
+ * {@code turnComplete} is accepted too, and a timeout covers a server that sends neither. Audio is batched to 100 ms per
  * message, as the API recommends.
  *
  * <p>One virtual thread owns the socket and all protocol state; socket callbacks and the caller's
@@ -58,7 +60,7 @@ public final class GeminiSpeechToText implements SpeechToText {
 
     /**
      * @param languageCodes BCP-47 hints; empty means automatic detection (Spanish and English both work)
-     * @param finalTimeout  how long to wait for {@code turnComplete} after the end of audio
+     * @param finalTimeout  how long to wait for the end of the turn after the end of audio
      */
     public record Config(URI url, String apiKey, String model, List<String> languageCodes, Duration finalTimeout) {
 
@@ -174,7 +176,7 @@ public final class GeminiSpeechToText implements SpeechToText {
                     long waitNanos = finalDeadline == Long.MAX_VALUE
                             ? TimeUnit.SECONDS.toNanos(1) : finalDeadline - System.nanoTime();
                     if (waitNanos <= 0) {
-                        LOG.debugf("no turnComplete within %s; using what was heard", config.finalTimeout());
+                        LOG.debugf("turn not closed by the server within %s; using what was heard", config.finalTimeout());
                         emit.emit(new TranscriptEvent.Final(text(settled, "")));
                         return;
                     }
@@ -232,7 +234,9 @@ public final class GeminiSpeechToText implements SpeechToText {
                 append(settled, segment.asText());
                 emit.emit(new TranscriptEvent.Partial(text(settled, "")));
             }
-            if (content.path("turnComplete").asBoolean(false) && finalDeadline != Long.MAX_VALUE) {
+            boolean turnOver = content.path("generationComplete").asBoolean(false)
+                    || content.path("turnComplete").asBoolean(false);
+            if (turnOver && finalDeadline != Long.MAX_VALUE) {
                 emit.emit(new TranscriptEvent.Final(text(settled, "")));
                 return true;
             }

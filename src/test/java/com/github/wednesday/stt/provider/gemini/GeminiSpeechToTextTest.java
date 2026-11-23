@@ -73,15 +73,19 @@ class GeminiSpeechToTextTest {
         }
     }
 
+    /** Message sequence observed from the real API (2026-11-22): binary JSON frames, generationComplete, no turnComplete. */
     static void happyPath(ServerWebSocket ws, JsonNode msg) {
         if (msg.has("setup")) {
-            ws.writeTextMessage("{\"setupComplete\":{}}");
+            ws.writeBinaryMessage(Buffer.buffer("{ \"setupComplete\": {} }"));
+        } else if (msg.path("realtimeInput").has("activityStart")) {
+            ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{},\"voiceActivity\":{\"type\":\"ACTIVITY_START\",\"audioOffset\":\"0s\"}}"));
         } else if (msg.path("realtimeInput").has("audio")) {
-            ws.writeTextMessage("{\"serverContent\":{\"interimInputTranscription\":{\"text\":\"qué ho\"}}}");
+            ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{\"interimInputTranscription\":{\"text\":\"qué ho\"}}}"));
         } else if (msg.path("realtimeInput").has("activityEnd")) {
-            ws.writeTextMessage("{\"serverContent\":{\"inputTranscription\":{\"text\":\"¿Qué hora\"}}}");
-            ws.writeTextMessage("{\"serverContent\":{\"inputTranscription\":{\"text\":\" es?\"}}}");
-            ws.writeTextMessage("{\"serverContent\":{\"turnComplete\":true}}");
+            ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{\"inputTranscription\":{\"text\":\"¿Qué hora\"}}}"));
+            ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{\"inputTranscription\":{\"text\":\" es?\"}}}"));
+            ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{\"generationComplete\":true}}"));
+            ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{},\"voiceActivity\":{\"type\":\"ACTIVITY_END\",\"audioOffset\":\"0.24s\"}}"));
         }
     }
 
@@ -96,11 +100,11 @@ class GeminiSpeechToTextTest {
     @Test
     void transcribesPushToTalkTurn() {
         var listener = new RecordingListener<TranscriptEvent>();
-        SttStream stream = stt(WAIT).open(listener);
+        SttStream stream = stt(Duration.ofSeconds(30)).open(listener);
         sendFrames(stream, 12);
         stream.endOfAudio();
 
-        assertTrue(listener.awaitTermination(WAIT));
+        assertTrue(listener.awaitTermination(WAIT), "generationComplete ends the turn without waiting for the timeout");
         assertEquals(1, listener.completions());
         List<TranscriptEvent> events = listener.events();
         assertInstanceOf(TranscriptEvent.Partial.class, events.getFirst());
@@ -155,13 +159,13 @@ class GeminiSpeechToTextTest {
     }
 
     @Test
-    void acceptsJsonInBinaryFrames() {
+    void acceptsTextFramesAndTurnCompleteToo() {
         script = (ws, msg) -> {
             if (msg.has("setup")) {
-                ws.writeBinaryMessage(Buffer.buffer("{\"setupComplete\":{}}"));
+                ws.writeTextMessage("{\"setupComplete\":{}}");
             } else if (msg.path("realtimeInput").has("activityEnd")) {
-                ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{\"inputTranscription\":{\"text\":\"hola\"}}}"));
-                ws.writeBinaryMessage(Buffer.buffer("{\"serverContent\":{\"turnComplete\":true}}"));
+                ws.writeTextMessage("{\"serverContent\":{\"inputTranscription\":{\"text\":\"hola\"}}}");
+                ws.writeTextMessage("{\"serverContent\":{\"turnComplete\":true}}");
             }
         };
         var listener = new RecordingListener<TranscriptEvent>();

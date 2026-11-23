@@ -18,6 +18,6 @@ class HealthTest {
     void browserClientIsServedAtRoot() {
         given().when().get("/").then().statusCode(200)
                 .body(containsString("<title>Wednesday</title>"))
-                .body(containsString("/ws/chat"));
+                .body(containsString("/ws/voice"));
     }
 }

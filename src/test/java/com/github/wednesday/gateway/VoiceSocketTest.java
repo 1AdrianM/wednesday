@@ -77,4 +77,26 @@ class VoiceSocketTest {
         assertEquals("Mensaje no válido.", client.next("error").path("message").asText());
         client.close();
     }
+    @Test
+    void typedTextAndReportOverTheSocket() throws Exception {
+        var client = VoiceClient.connect(uri);
+        client.next("ready");
+        client.send("{\"type\":\"user_text\",\"text\":\"hola\"}");
+        client.nextState("thinking");
+        StringBuilder text = new StringBuilder();
+        JsonNode n;
+        while (!(n = client.next("token")).isMissingNode()) {
+            text.append(n.path("text").asText());
+            if (text.toString().contains("Me has dicho: hola")) {
+                break;
+            }
+        }
+        JsonNode done = client.next("turn_done");
+        assertFalse(done.path("voice").asBoolean());
+        client.send("{\"type\":\"report\"}");
+        JsonNode report = client.next("report");
+        assertEquals(1, report.path("turns").size());
+        assertTrue(report.has("p50FirstAudioMs"));
+        client.close();
+    }
 }

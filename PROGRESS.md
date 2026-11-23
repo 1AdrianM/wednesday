@@ -41,10 +41,12 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 - [x] P3-R2 Gateway WebSocket `/ws/voice`: binary frames + JSON controls in, binary PCM + JSON events out. `VoiceSession` is an actor (one thread + queue); found a latent lock-order deadlock in `ChatSession` (reset vs onComplete), to retire with it in R5
 - [x] P3-R3 Real SpeechToText adapter (partial + final). Real API sends binary JSON frames and ends a manual turn with `generationComplete`, never `turnComplete` (docs imply the latter); Final ~0,4 s after end of audio
 - [x] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test (done before R2/R3: the voice socket builds on it). Phase 3 is push-to-talk; SPEAKING->LISTENING (barge-in) waits for Phase 4
-- [ ] P3-R5 Minimal browser voice client
+- [x] P3-R5 Browser voice client: the existing index.html now does push-to-talk (AudioWorklet resampling to 16 kHz, 640-byte frames), plays 24 kHz PCM, shows live transcript and state (SPEAKING lasts until the browser finishes playing). `/ws/chat` + `ChatSession` retired, cases moved to voice tests. ADR 0003
 - [x] P3-R6 Architecture test: Gateway holds no prompts or logic (allow-list of dependencies: session, common, JSON, WebSocket runtime)
 - [x] P3-R7 Session cleanup on disconnect: 12 connect/disconnect cycles (idle, listening, mid-reply) leave no session or thread; checked with a JSON thread dump because `Thread.getAllStackTraces()` skips virtual threads. Mutation check: removing `session.close()` makes it fail
 - [x] P3-R8 Integration test: es/en fixture WAVs through `/ws/voice` with fakes -> spoken reply (`VoiceTurnIntegrationTest`)
+
+Pre-acceptance runs (2026-11-22, real Gemini STT + LLM + TTS): WAV over `/ws/voice` from Java gave transcript final 0,46 s after stop and first audio 2,66 s after stop. Headless Chrome with a fake microphone pressing the real mic button heard "Hola, Wednesday, ¿qué hora es?" and replied aloud with first audio 2,01 s after release; the tally went listening -> thinking -> speaking -> idle. Above the 1,2 s target (Phase 7). Awaiting owner acceptance: speak into the browser.
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)
@@ -62,7 +64,7 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 - Gemini cancel is checked between SSE lines; a blocked read is not interrupted. Revisit for barge-in in Phase 4.
 - Retry only when a call fails before any text (retrying after partial text would repeat words aloud). Apology messages are Spanish only for now.
 - CLI is a plain Java main run via exec-maven-plugin (`./chat`), not Quarkus command mode, to keep the web app untouched. Model chosen by name in ai.LanguageModels so cli never imports provider types.
-- Owner asked for a browser frontend during Phase 1: added a text-only WebSocket `/ws/chat` (gateway.ChatSocket -> session.ChatSession). It is an early, text-only slice of P3-R2; audio frames and the real state machine still belong to Phase 3.
+- Owner asked for a browser frontend during Phase 1: added a text-only WebSocket `/ws/chat` (gateway.ChatSocket -> session.ChatSession). Replaced by `/ws/voice` in P3-R5.
 - Browser client: live-subtitle direction chosen by owner (see DESIGN.md, .impeccable/surfaces/chat.md). Run with `WEDNESDAY_LLM=fake ./mvnw quarkus:dev` or with GEMINI_API_KEY set.
 - Default model is gemini-3.5-flash-lite: gemini-flash-latest rejected thinkingLevel MINIMAL and later returned 503 (high demand); gemini-3.6-flash did not answer within 8 s. 3.5-flash-lite gave ~0,4-1,0 s first token.
 - 400 errors (bad parameter) are retried like any other failure; not retrying 4xx except 429 is a cheap later improvement (Phase 7, P7-R4).

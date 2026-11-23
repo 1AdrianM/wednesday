@@ -189,6 +189,57 @@ class VoiceSessionTest {
         assertEquals(count, events.size(), "no events after close");
     }
 
+    @Test
+    void rejectsANewMessageWhileReplying() throws Exception {
+        VoiceSession s = open(FakeSpeechToText.builder().build(),
+                FakeLanguageModel.builder().reply(REPLY).tokenDelay(Duration.ofMillis(50)).build(),
+                FakeTextToSpeech.builder().build());
+        s.userText("uno");
+        await(state(THINKING), "thinking");
+        s.userText("dos");
+        await(e -> e.equals(new SessionEvent.Error("Espera a que termine de responder.")), "rejection");
+        await(e -> e instanceof SessionEvent.TurnDone, "first turn still finishes");
+    }
+
+    @Test
+    void emptyMessageIsAnError() throws Exception {
+        VoiceSession s = openDefault();
+        s.userText("   ");
+        await(e -> e.equals(new SessionEvent.Error("El mensaje está vacío.")), "error");
+        assertEquals(List.of(), states());
+    }
+
+    @Test
+    void reportListsFinishedTurnsWithPercentiles() throws Exception {
+        VoiceSession s = openDefault();
+        s.userText("uno");
+        await(e -> e instanceof SessionEvent.TurnDone, "turn 1");
+        await(state(IDLE), "idle");
+        s.report();
+        await(e -> e instanceof SessionEvent.Report, "report");
+        var report = (SessionEvent.Report) events.stream().filter(e -> e instanceof SessionEvent.Report).findFirst().orElseThrow();
+        assertEquals(1, report.turns().size());
+        assertNotNull(report.p50FirstTokenMillis());
+        assertNotNull(report.p50FirstAudioMillis());
+        assertNotNull(report.p95FirstAudioMillis());
+    }
+
+    @Test
+    void resetClearsTheConversation() throws Exception {
+        var llm = FakeLanguageModel.builder().reply(REPLY).build();
+        VoiceSession s = open(FakeSpeechToText.builder().build(), llm, FakeTextToSpeech.builder().build());
+        s.userText("me llamo Ana");
+        await(e -> e instanceof SessionEvent.TurnDone, "turn 1");
+        await(state(IDLE), "idle");
+        s.reset();
+        await(e -> e instanceof SessionEvent.Reset, "reset");
+        events.clear();
+        s.userText("¿cómo me llamo?");
+        await(e -> e instanceof SessionEvent.TurnDone, "turn 2");
+        var lastRequest = llm.requests().getLast().toString();
+        assertFalse(lastRequest.contains("me llamo Ana"), "context was cleared: " + lastRequest);
+    }
+
     private static SttStream failingStream(StreamListener<TranscriptEvent> listener) {
         var stream = VirtualThreadStream.<TranscriptEvent>start("broken-stt", listener, emit -> {
             throw new IllegalStateException("stt down");

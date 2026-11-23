@@ -59,6 +59,9 @@ Pre-acceptance runs (2026-11-22, real Gemini STT + LLM + TTS): WAV over `/ws/voi
 ## Phase 4
 Not started. Background note for P4-R1 defaults: `docs/notes/turn-taking-timing.md`.
 
+## Phase 5
+Not started. Owner preference (2026-11-22): tool use must sound natural. Announce what is being done, give a progress update on long tools, summarize results the spoken way, and use layered fallbacks. This extends P5-R5 ("one filler phrase"); agree the change when the phase starts. Design notes in `docs/notes/viabilidad-agentic-tooling-y-rag.md` section 6.
+
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)
 

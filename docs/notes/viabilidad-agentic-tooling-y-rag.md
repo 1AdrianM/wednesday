@@ -102,6 +102,41 @@ Lo primero es el **tamaño del corpus**. La memoria de la Fase 6 son hechos y pr
 - **Privacidad.** ¿Aceptas que los textos de tu memoria salgan a la API de embeddings de Google, o prefieres embeddings locales aunque cueste una dependencia?
 - **Alcance de RAG.** ¿Sólo memoria personal (spec) o también tus documentos y notas? Lo segundo es una ampliación y entraría como idea nueva.
 
+---
+
+## 6. Preferencia del dueño: el uso de herramientas debe sonar natural (2026-11-22)
+
+> "Lo más natural en el caso de tool use es hacerlo lo más natural posible, tener fallbacks, como: «Estoy haciendo tal búsqueda web como me pidió, jefe… ya casi termino… resultados de la búsqueda»."
+
+Esto va **más allá de P5-R5**, que pide "una frase de relleno, una vez". Propuesta para cuando empiece la Fase 5: ampliar P5-R5 con el visto bueno del dueño.
+
+### Escalera de narración según lo que tarda la herramienta
+| Tiempo de la herramienta | Qué dice Wednesday |
+|---|---|
+| < ~0,7 s | Nada: la respuesta llega sola |
+| > ~0,7 s | Anuncia qué hace y con qué: "Estoy buscando «vuelos a Lisboa» en la web, jefe." |
+| > ~4 s | Una actualización, sin repetirse: "Ya casi termino…" o "Está tardando un poco más de lo normal." |
+| Resultado | Lo resume al estilo hablado: "Encontré tres opciones; la más barata es…". Nunca lee la lista en bruto |
+| Fallo o timeout | Lo cuenta y ofrece una salida: "No he podido entrar a la web ahora mismo. ¿Lo intento otra vez o te digo lo que sé sin buscar?" |
+
+Los umbrales son ideas iniciales y se medirán; la referencia humana está en `turn-taking-timing.md`.
+
+### Decisiones técnicas que esto implica
+- **Quién redacta el anuncio.**
+  - **Plantilla por herramienta:** cada `Tool` declara su frase de progreso con huecos para los argumentos ("Estoy buscando «{query}» en la web"). Es instantánea, predecible y no gasta una llamada extra al LLM.
+  - **Preámbulo del propio modelo:** el LLM escribe una frase antes de la `functionCall`. Suena más variado, pero depende de que Gemini mezcle texto y llamada en el mismo stream (está en el spike pendiente).
+  - **Propuesta:** usar el preámbulo si llega y la plantilla si no.
+- **El TTS es el problema escondido.**
+  - **Latencia:** sintetizar el relleno cuesta ~1,2 s, casi tanto como lo que quiere tapar.
+  - **Cuota:** con 10 peticiones de voz al día, cada relleno gasta una.
+  - **Solución:** **cachear el audio de las frases fijas** ("ya casi termino", "un momento") al arrancar o la primera vez, y sintetizar sólo la parte variable. Encaja con lo aparcado sobre la cuota del TTS.
+- **Fallbacks en capas:**
+  1. reintentar una vez si el error es transitorio;
+  2. si no, devolver al modelo un error estructurado (P5-R2/R3) para que lo explique con naturalidad;
+  3. si aplica, responder con lo que sabe, avisando de que no pudo comprobarlo.
+- **Interrumpir:** si el usuario habla durante la narración, se cancela la herramienta cuando se pueda (P5-R5 y Fase 4).
+- **Tratamiento ("jefe").** Es una decisión de personalidad del prompt de sistema y está pendiente de confirmar con el dueño.
+
 ## Fuentes
 - Function calling con la API de Gemini: https://ai.google.dev/gemini-api/docs/generate-content/function-calling
 - Function calling en Vertex AI (flujo `functionCall` / `functionResponse`): https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/function-calling

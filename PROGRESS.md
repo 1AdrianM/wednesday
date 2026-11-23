@@ -46,7 +46,10 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 - [x] P3-R7 Session cleanup on disconnect: 12 connect/disconnect cycles (idle, listening, mid-reply) leave no session or thread; checked with a JSON thread dump because `Thread.getAllStackTraces()` skips virtual threads. Mutation check: removing `session.close()` makes it fail
 - [x] P3-R8 Integration test: es/en fixture WAVs through `/ws/voice` with fakes -> spoken reply (`VoiceTurnIntegrationTest`)
 
-Pre-acceptance runs (2026-11-22, real Gemini STT + LLM + TTS): WAV over `/ws/voice` from Java gave transcript final 0,46 s after stop and first audio 2,66 s after stop. Headless Chrome with a fake microphone pressing the real mic button heard "Hola, Wednesday, ¿qué hora es?" and replied aloud with first audio 2,01 s after release; the tally went listening -> thinking -> speaking -> idle. Above the 1,2 s target (Phase 7). Awaiting owner acceptance: speak into the browser.
+Pre-acceptance runs (2026-11-22, real Gemini STT + LLM + TTS): WAV over `/ws/voice` from Java gave transcript final 0,46 s after stop and first audio 2,66 s after stop. Headless Chrome with a fake microphone pressing the real mic button heard "Hola, Wednesday, ¿qué hora es?" and replied aloud with first audio 2,01 s after release; the tally went listening -> thinking -> speaking -> idle. Above the 1,2 s target (Phase 7). Stage breakdown: `docs/notes/latency-breakdown-2026-11-22.md`. TTS is the biggest steady-state stage and STT variance drives the tail. The free TTS quota is 10 requests/day and ran out during measurement. Awaiting owner acceptance: speak into the browser.
+
+## Phase 4
+Not started. Background note for P4-R1 defaults: `docs/notes/turn-taking-timing.md`.
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)

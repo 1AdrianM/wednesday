@@ -1,5 +1,5 @@
 # Progress
-Current phase: 2
+Current phase: 3
 
 ## Phase 0
 - [x] P0-R1 Quarkus skeleton + health endpoint
@@ -33,7 +33,18 @@ Acceptance: 10-turn real Gemini conversation (2026-11-22) kept context (name, ci
 - [x] P2-R5 Timeline first-audio per turn in the report
 - [x] P2-R6 Test: segment 1 audio starts before the model finishes
 
-Acceptance run (2026-11-22, real Gemini text + voice, CLI): turn 1 first token 0,95 s, first audio 2,06 s, text complete 3,66 s (voice started before the text finished); turn 2 first audio 4,06 s (slow first token 2,65 s). Awaiting owner approval.
+Acceptance run (2026-11-22, real Gemini text + voice, CLI): turn 1 first token 0,95 s, first audio 2,06 s, text complete 3,66 s (voice started before the text finished); turn 2 first audio 4,06 s (slow first token 2,65 s). Approved by owner 2026-11-22 ("seguimos con las fases").
+
+## Phase 3
+STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by owner 2026-11-22.
+- [x] P3-R1 Audio format decided (ADR 0002: 16 kHz 16-bit mono, 20 ms = 640-byte frames) and enforced at the Gateway (`InputFrames`)
+- [ ] P3-R2 Gateway WebSocket: audio + control in, audio + events out
+- [ ] P3-R3 Real SpeechToText adapter (partial + final)
+- [ ] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test
+- [ ] P3-R5 Minimal browser voice client
+- [ ] P3-R6 Architecture test: Gateway holds no prompts or logic
+- [ ] P3-R7 Session cleanup on disconnect (repeated connect/disconnect test)
+- [ ] P3-R8 Integration test: fixture WAV through the WebSocket with fakes -> response audio
 
 ## Phase 6
 - P6-R8 // HUMAN — retrieval ranking logic (agent writes interface + tests only)

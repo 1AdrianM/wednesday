@@ -40,7 +40,7 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 - [x] P3-R1 Audio format decided (ADR 0002: 16 kHz 16-bit mono, 20 ms = 640-byte frames) and enforced at the Gateway (`InputFrames`)
 - [ ] P3-R2 Gateway WebSocket: audio + control in, audio + events out
 - [ ] P3-R3 Real SpeechToText adapter (partial + final)
-- [ ] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test
+- [x] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test (done before R2/R3: the voice socket builds on it). Phase 3 is push-to-talk; SPEAKING->LISTENING (barge-in) waits for Phase 4
 - [ ] P3-R5 Minimal browser voice client
 - [ ] P3-R6 Architecture test: Gateway holds no prompts or logic
 - [ ] P3-R7 Session cleanup on disconnect (repeated connect/disconnect test)

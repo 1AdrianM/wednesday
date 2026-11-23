@@ -33,6 +33,7 @@ public final class ChatSession implements AutoCloseable {
     private final Timeline timeline;
     private final Consumer<SessionEvent> out;
     private final List<SessionEvent.TurnDone> finished = new ArrayList<>();
+    private final SessionStateMachine state;
     private StreamHandle inFlight;
     private boolean closed;
 
@@ -43,6 +44,7 @@ public final class ChatSession implements AutoCloseable {
         this.context = Objects.requireNonNull(context);
         this.timeline = Objects.requireNonNull(timeline);
         this.out = Objects.requireNonNull(out);
+        this.state = new SessionStateMachine(s -> out.accept(new SessionEvent.StateChanged(s)));
     }
 
     public SessionId id() {
@@ -65,7 +67,7 @@ public final class ChatSession implements AutoCloseable {
         try (var scope = SessionLogContext.open(id)) {
             int turn = timeline.beginTurn();
             timeline.mark(Stage.REQUEST_SENT);
-            out.accept(new SessionEvent.StateChanged(SessionEvent.State.THINKING));
+            state.moveTo(SessionState.THINKING);
             inFlight = engine.respond(text.strip(), new StreamListener<>() {
                 @Override
                 public void onEvent(String token) {
@@ -77,7 +79,7 @@ public final class ChatSession implements AutoCloseable {
                 public void onError(Throwable error) {
                     LOG.errorf("reply failed: %s", error.toString());
                     out.accept(new SessionEvent.Error("Algo ha fallado al responder."));
-                    out.accept(new SessionEvent.StateChanged(SessionEvent.State.IDLE));
+                    state.moveTo(SessionState.IDLE);
                 }
 
                 @Override
@@ -90,7 +92,7 @@ public final class ChatSession implements AutoCloseable {
                         finished.add(done);
                     }
                     out.accept(done);
-                    out.accept(new SessionEvent.StateChanged(SessionEvent.State.IDLE));
+                    state.moveTo(SessionState.IDLE);
                 }
             });
         }
@@ -101,7 +103,11 @@ public final class ChatSession implements AutoCloseable {
         cancelInFlight();
         context.clear();
         out.accept(new SessionEvent.Reset());
-        out.accept(new SessionEvent.StateChanged(SessionEvent.State.IDLE));
+        if (state.current() == SessionState.IDLE) {
+            out.accept(new SessionEvent.StateChanged(SessionState.IDLE));
+        } else {
+            state.moveTo(SessionState.IDLE);
+        }
     }
 
     /** Sends the latency rows of every finished turn. */

@@ -56,7 +56,7 @@ public class ChatSessions {
             var session = new ChatSession(id, new AiEngine(llm, context), context, Timeline.system(), out);
             LOG.infof("session opened (model=%s)", provider);
             out.accept(new SessionEvent.Ready(id.value(), provider, contextTurns, ChatSession.TARGET_MILLIS));
-            out.accept(new SessionEvent.StateChanged(SessionEvent.State.IDLE));
+            out.accept(new SessionEvent.StateChanged(SessionState.IDLE));
             return session;
         }
     }

@@ -38,13 +38,13 @@ class ChatSessionTest {
         assertTrue(turnDone.await(3, TimeUnit.SECONDS));
         Thread.sleep(20);
 
-        assertEquals(new SessionEvent.StateChanged(SessionEvent.State.THINKING), events.getFirst());
+        assertEquals(new SessionEvent.StateChanged(SessionState.THINKING), events.getFirst());
         assertEquals(List.of(new SessionEvent.Token("Hola, "), new SessionEvent.Token("Ana.")),
                 events.stream().filter(SessionEvent.Token.class::isInstance).toList());
         var done = (SessionEvent.TurnDone) events.stream().filter(SessionEvent.TurnDone.class::isInstance).findFirst().orElseThrow();
         assertEquals(1, done.turn());
         assertTrue(done.firstTokenMillis() >= 0 && done.totalMillis() >= done.firstTokenMillis());
-        assertEquals(new SessionEvent.StateChanged(SessionEvent.State.IDLE), events.getLast());
+        assertEquals(new SessionEvent.StateChanged(SessionState.IDLE), events.getLast());
     }
 
     @Test

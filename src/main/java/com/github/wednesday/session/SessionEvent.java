@@ -9,8 +9,8 @@ public sealed interface SessionEvent {
     record Ready(String sessionId, String model, int contextTurns, long targetMillis) implements SessionEvent {
     }
 
-    /** Coarse session state; the full state machine arrives in Phase 3. */
-    record StateChanged(State state) implements SessionEvent {
+    /** The session moved to {@code state}. */
+    record StateChanged(SessionState state) implements SessionEvent {
     }
 
     /** A piece of Wednesday's reply, in order. */
@@ -33,5 +33,4 @@ public sealed interface SessionEvent {
     record Error(String message) implements SessionEvent {
     }
 
-    enum State { IDLE, THINKING }
 }

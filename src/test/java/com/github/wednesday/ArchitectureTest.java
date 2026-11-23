@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +42,22 @@ class ArchitectureTest {
                 .allowEmptyShould(true);
     }
 
+    /**
+     * The Gateway only translates between the wire and sessions: it may use sessions, shared
+     * primitives, JSON and the WebSocket runtime, and nothing that holds prompts or decisions
+     * (ai, context, memory, tools, stt, tts).
+     */
+    static ArchRule gatewayOnlyTranslates() {
+        return classes().that().resideInAPackage(BASE + ".gateway..")
+                .should().onlyDependOnClassesThat().resideInAnyPackage(
+                        BASE + ".gateway..", BASE + ".session..", BASE + ".common..",
+                        "java..", "com.fasterxml.jackson..", "io.quarkus.websockets.next..",
+                        "io.vertx.core.buffer..", "io.smallrye.common.annotation..", "org.jboss.logging..",
+                        "jakarta..")
+                .as("the gateway holds no prompts or logic: it depends only on session, common and transport types")
+                .allowEmptyShould(true);
+    }
+
     private static JavaClasses mainClasses() {
         return new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -63,6 +80,19 @@ class ArchitectureTest {
     @Test
     void commonIsIndependentOfComponents() {
         commonDependsOnNoComponent().check(mainClasses());
+    }
+
+    @Test
+    void gatewayHoldsNoPromptsOrLogic() {
+        gatewayOnlyTranslates().check(mainClasses());
+    }
+
+    @Test
+    void gatewayRuleCatchesPromptAccess() {
+        JavaClasses fixture = new ClassFileImporter().importClasses(
+                com.github.wednesday.gateway.ArchFixturePromptInGateway.class);
+        assertTrue(gatewayOnlyTranslates().evaluate(fixture).hasViolation(),
+                "a gateway class using context.SystemPrompt must be reported");
     }
 
     @Test

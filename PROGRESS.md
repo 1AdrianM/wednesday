@@ -42,7 +42,7 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 - [x] P3-R3 Real SpeechToText adapter (partial + final). Real API sends binary JSON frames and ends a manual turn with `generationComplete`, never `turnComplete` (docs imply the latter); Final ~0,4 s after end of audio
 - [x] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test (done before R2/R3: the voice socket builds on it). Phase 3 is push-to-talk; SPEAKING->LISTENING (barge-in) waits for Phase 4
 - [ ] P3-R5 Minimal browser voice client
-- [ ] P3-R6 Architecture test: Gateway holds no prompts or logic
+- [x] P3-R6 Architecture test: Gateway holds no prompts or logic (allow-list of dependencies: session, common, JSON, WebSocket runtime)
 - [ ] P3-R7 Session cleanup on disconnect (repeated connect/disconnect test)
 - [ ] P3-R8 Integration test: fixture WAV through the WebSocket with fakes -> response audio
 

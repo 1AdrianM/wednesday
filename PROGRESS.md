@@ -48,6 +48,14 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 
 Pre-acceptance runs (2026-11-22, real Gemini STT + LLM + TTS): WAV over `/ws/voice` from Java gave transcript final 0,46 s after stop and first audio 2,66 s after stop. Headless Chrome with a fake microphone pressing the real mic button heard "Hola, Wednesday, ¿qué hora es?" and replied aloud with first audio 2,01 s after release; the tally went listening -> thinking -> speaking -> idle. Above the 1,2 s target (Phase 7). Stage breakdown: `docs/notes/latency-breakdown-2026-11-22.md`. TTS is the biggest steady-state stage and STT variance drives the tail. The free TTS quota is 10 requests/day and ran out during measurement. Awaiting owner acceptance: speak into the browser.
 
+## Parked for later (owner asked 2026-11-22 to revisit these)
+- **TTS free quota:** `gemini-3.8-flash-lite-tts` allows 10 requests/day and 3/min, too little for daily use. Needs a provider or plan decision from the owner; check whether `gemini-3.8-flash-tts` has a separate quota.
+- **Bug:** `AiEngine.respond` accepts blank text, and Gemini answers 400 ("ending with a model turn"). `VoiceSession` filters blanks, but the engine should reject them itself.
+- **STT tail latency:** the Live WebSocket is opened per press (0,3 to 7,2 s, one 10 s connect timeout). Warm or pre-open the connection per session, and retry the connect once. Phase 7.
+- **TTS first audio (~1,2 s, biggest steady-state stage):** shorter first segment (cut at the first comma), faster TTS, cached fixed phrases. Phase 7.
+- **LLM:** speculative start on a stable partial transcript, and occasional first-token outliers up to 4,9 s. Phase 7.
+- **Re-measure** p50/p95 over 20+ turns once the quota allows (`docs/notes/latency-breakdown-2026-11-22.md`).
+
 ## Phase 4
 Not started. Background note for P4-R1 defaults: `docs/notes/turn-taking-timing.md`.
 

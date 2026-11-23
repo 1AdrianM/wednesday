@@ -34,3 +34,6 @@ Earlier runs the same day measured first audio at 2,01 s (Chrome) and 2,66 s (Ja
 2. **TTS:** a faster first audio. Make the first segment a short clause (cut at the first comma). Try a TTS with lower time-to-first-byte or a paid tier. Cache fixed phrases such as the apology.
 3. **LLM:** start speculatively on a stable partial transcript. Keep thinking minimal. Measure a model with lower first-token latency.
 4. **Measure p50/p95 over 20+ turns** once the quota allows. Eight turns with failures are only indicative.
+
+## Owner's browser test (2026-11-23)
+Speaking into the browser UI: text appears ~1,3 s after release, first audio ~3 s. The ~1,7 s gap is the first sentence plus a non-streaming TTS call, consistent with the TTS row above. Candidate fix 2 (shorter first segment) is the cheapest next step.

@@ -54,6 +54,7 @@ Pre-acceptance runs (2026-11-22, real Gemini STT + LLM + TTS): WAV over `/ws/voi
 - **STT tail latency:** the Live WebSocket is opened per press (0,3 to 7,2 s, one 10 s connect timeout). Warm or pre-open the connection per session, and retry the connect once. Phase 7.
 - **TTS first audio (~1,2 s, biggest steady-state stage):** shorter first segment (cut at the first comma), faster TTS, cached fixed phrases. Phase 7.
 - **LLM:** speculative start on a stable partial transcript, and occasional first-token outliers up to 4,9 s. Phase 7.
+- **Owner test 2026-11-23:** text ~1,3 s, voice ~3 s after release in the browser. Phase 3 acceptance (voice works end to end) still to be confirmed by the owner next session.
 - **Re-measure** p50/p95 over 20+ turns once the quota allows (`docs/notes/latency-breakdown-2026-11-22.md`).
 
 ## Phase 4

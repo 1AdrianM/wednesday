@@ -43,7 +43,7 @@ STT provider: Gemini Transcribe Live (`gemini-3.5-transcribe-live`), chosen by o
 - [x] P3-R4 Session state machine IDLE/LISTENING/THINKING/SPEAKING, table test (done before R2/R3: the voice socket builds on it). Phase 3 is push-to-talk; SPEAKING->LISTENING (barge-in) waits for Phase 4
 - [ ] P3-R5 Minimal browser voice client
 - [x] P3-R6 Architecture test: Gateway holds no prompts or logic (allow-list of dependencies: session, common, JSON, WebSocket runtime)
-- [ ] P3-R7 Session cleanup on disconnect (repeated connect/disconnect test)
+- [x] P3-R7 Session cleanup on disconnect: 12 connect/disconnect cycles (idle, listening, mid-reply) leave no session or thread; checked with a JSON thread dump because `Thread.getAllStackTraces()` skips virtual threads. Mutation check: removing `session.close()` makes it fail
 - [ ] P3-R8 Integration test: fixture WAV through the WebSocket with fakes -> response audio
 
 ## Phase 6

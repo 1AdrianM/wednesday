@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Wednesday Evaluation Runner
+# Ejecuta la suite de evaluación LLM-as-a-Judge
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Wednesday LLM-as-a-Judge Evaluation Suite"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Check API key
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo -e "${RED}Error: GEMINI_API_KEY not set${NC}"
+    echo "Export your Gemini API key:"
+    echo "  export GEMINI_API_KEY='your_api_key'"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ API key configured${NC}"
+
+# Set output directory
+EVAL_OUTPUT_DIR="${WEDNESDAY_EVAL_OUTPUT_DIR:-target/evaluation-reports}"
+export WEDNESDAY_EVAL_OUTPUT_DIR="$EVAL_OUTPUT_DIR"
+mkdir -p "$EVAL_OUTPUT_DIR"
+echo -e "${GREEN}✓ Output directory: $EVAL_OUTPUT_DIR${NC}"
+echo ""
+
+# Determine test to run
+TEST_NAME="${1:-all}"
+
+case "$TEST_NAME" in
+    good)
+        echo "Running: Good Responses Evaluation"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        mvn test -Dtest=WednesdayEvaluationSuite#evaluateGoodResponses
+        ;;
+    bad)
+        echo "Running: Bad Responses Evaluation"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        mvn test -Dtest=WednesdayEvaluationSuite#evaluateBadResponses
+        ;;
+    single)
+        echo "Running: Single Turn Evaluation"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        mvn test -Dtest=WednesdayEvaluationSuite#evaluateSingleTurn
+        ;;
+    all)
+        echo "Running: Full Evaluation Suite"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        mvn test -Dtest=WednesdayEvaluationSuite
+        ;;
+    *)
+        echo -e "${RED}Unknown test: $TEST_NAME${NC}"
+        echo ""
+        echo "Usage: $0 [good|bad|single|all]"
+        echo ""
+        echo "Examples:"
+        echo "  $0           # Run all tests (default)"
+        echo "  $0 good      # Evaluate good responses"
+        echo "  $0 bad       # Evaluate bad responses (violation detection)"
+        echo "  $0 single    # Quick single-turn test"
+        exit 1
+        ;;
+esac
+
+EXIT_CODE=$?
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if [ $EXIT_CODE -eq 0 ]; then
+    echo -e "${GREEN}✓ Evaluation completed successfully${NC}"
+    echo ""
+    echo "Reports saved in: $EVAL_OUTPUT_DIR"
+    ls -1t "$EVAL_OUTPUT_DIR" | head -5 | while read file; do
+        echo "  - $file"
+    done
+else
+    echo -e "${RED}✗ Evaluation failed${NC}"
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+exit $EXIT_CODE
